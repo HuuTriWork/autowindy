@@ -1,34 +1,34 @@
--- ========== FIXED DRAGGABLE MENU ==========
+-- ========== SERVICES ==========
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Tạo GUI
+-- ========== MAIN GUI ==========
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FixedPositionGUI"
+ScreenGui.Name = "BossHunterGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = game:GetService("CoreGui")
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 200)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100) -- Luôn căn giữa khi khởi động
-MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+MainFrame.Size = UDim2.new(0, 350, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200) -- Căn giữa màn hình
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 MainFrame.BorderSizePixel = 0
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5) -- Quan trọng: giúp menu không bị văng
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5) -- Giúp menu không bị văng
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = MainFrame
 
--- Thanh tiêu đề
+-- ========== TITLE BAR ==========
 local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Size = UDim2.new(1, 0, 0, 30)
-TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 TitleBar.BorderSizePixel = 0
 TitleBar.Parent = MainFrame
 
@@ -36,14 +36,13 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Name = "TitleLabel"
 TitleLabel.Size = UDim2.new(0.7, 0, 1, 0)
 TitleLabel.Position = UDim2.new(0.15, 0, 0, 0)
-TitleLabel.Text = "MENU CONTROL"
+TitleLabel.Text = "BOSS HUNTER"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextSize = 14
+TitleLabel.TextSize = 18
 TitleLabel.BackgroundTransparency = 1
 TitleLabel.Parent = TitleBar
 
--- Nút đóng
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
 CloseButton.Size = UDim2.new(0, 30, 0, 30)
@@ -51,43 +50,22 @@ CloseButton.Position = UDim2.new(1, -35, 0.5, -15)
 CloseButton.Text = "×"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 18
+CloseButton.TextSize = 24
 CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 CloseButton.BackgroundTransparency = 0.8
 CloseButton.Parent = TitleBar
 
--- Nội dung chính
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, -20, 1, -50)
-ContentFrame.Position = UDim2.new(0, 10, 0, 40)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = MainFrame
+-- ========== DRAGGABLE FUNCTION ==========
+local dragging, dragInput, dragStart, startPos
 
--- ========== CƠ CHẾ KÉO THẢ CẢI TIẾN ==========
-local dragging
-local dragStart
-local startPos
-
-local function UpdateInput(input)
+local function Update(input)
     local delta = input.Position - dragStart
-    local newPos = UDim2.new(
-        startPos.X.Scale, 
-        startPos.X.Offset + delta.X, 
-        startPos.Y.Scale, 
+    MainFrame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
         startPos.Y.Offset + delta.Y
     )
-    
-    -- Giới hạn phạm vi di chuyển (tùy chọn)
-    local viewportSize = workspace.CurrentCamera.ViewportSize
-    newPos = UDim2.new(
-        math.clamp(newPos.X.Scale, 0, 1),
-        math.clamp(newPos.X.Offset, -MainFrame.AbsoluteSize.X/2, viewportSize.X - MainFrame.AbsoluteSize.X/2),
-        math.clamp(newPos.Y.Scale, 0, 1),
-        math.clamp(newPos.Y.Offset, -MainFrame.AbsoluteSize.Y/2, viewportSize.Y - MainFrame.AbsoluteSize.Y/2)
-    )
-    
-    MainFrame.Position = newPos
 end
 
 TitleBar.InputBegan:Connect(function(input)
@@ -106,20 +84,72 @@ end)
 
 TitleBar.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-        UpdateInput(input)
+        dragInput = input
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        UpdateInput(input)
+    if input == dragInput and dragging then
+        Update(input)
     end
 end)
 
--- Nút đóng
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
+-- ========== BOSS HUNTING SYSTEM ==========
+local AutoKill = {
+    Active = false,
+    Bosses = {
+        "Tunnel Bear",
+        "Windy Bee",
+        "Coconut Crab",
+        "Mondo Chick",
+        "Stump Snail"
+    },
+    CurrentTarget = nil,
+    
+    Start = function(self, bossName)
+        if not table.find(self.Bosses, bossName) then return end
+        if self.Active and self.CurrentTarget == bossName then return end
+        
+        self.Active = true
+        self.CurrentTarget = bossName
+        
+        task.spawn(function()
+            while self.Active and self.CurrentTarget == bossName do
+                local boss = self:FindBoss(bossName)
+                if boss then
+                    local character = LocalPlayer.Character
+                    if character then
+                        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                        if humanoidRootPart then
+                            local attackCFrame = boss:FindFirstChild("HumanoidRootPart") and 
+                                               boss.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0) or
+                                               boss.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
+                            
+                            humanoidRootPart.CFrame = attackCFrame
+                            task.wait(0.1)
+                        end
+                    end
+                else
+                    task.wait(5)
+                end
+            end
+        end)
+    end,
+    
+    Stop = function(self)
+        self.Active = false
+        self.CurrentTarget = nil
+    end,
+    
+    FindBoss = function(self, bossName)
+        for _, monster in ipairs(workspace.Monsters:GetChildren()) do
+            if string.find(monster.Name, bossName) then
+                return monster
+            end
+        end
+        return nil
+    end
+}
 
 -- ========== NO-CLIP SYSTEM ==========
 local NoClip = {
@@ -127,30 +157,90 @@ local NoClip = {
     
     Toggle = function(self)
         self.Enabled = not self.Enabled
-        if LocalPlayer.Character then
-            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = not self.Enabled
-                end
+        local character = LocalPlayer.Character
+        if not character then return end
+        
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = not self.Enabled
             end
         end
+    end,
+    
+    Run = function(self)
+        RunService.Stepped:Connect(function()
+            if self.Enabled and LocalPlayer.Character then
+                for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
     end
 }
 
+NoClip:Run()
+
+-- ========== BOSS SELECTION UI ==========
+local BossList = Instance.new("ScrollingFrame")
+BossList.Name = "BossList"
+BossList.Size = UDim2.new(1, -20, 0.7, -10)
+BossList.Position = UDim2.new(0, 10, 0, 40)
+BossList.BackgroundTransparency = 1
+BossList.ScrollBarThickness = 5
+BossList.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.Parent = BossList
+
+-- Tạo nút cho từng boss
+for _, bossName in ipairs(AutoKill.Bosses) do
+    local bossButton = Instance.new("TextButton")
+    bossButton.Name = bossName.."Button"
+    bossButton.Size = UDim2.new(1, 0, 0, 40)
+    bossButton.Text = bossName
+    bossButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    bossButton.Font = Enum.Font.Gotham
+    bossButton.TextSize = 14
+    bossButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    bossButton.Parent = BossList
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = bossButton
+    
+    bossButton.MouseButton1Click:Connect(function()
+        if AutoKill.Active and AutoKill.CurrentTarget == bossName then
+            AutoKill:Stop()
+            bossButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+        else
+            AutoKill:Start(bossName)
+            for _, btn in ipairs(BossList:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    btn.BackgroundColor3 = btn.Name == bossName.."Button" and Color3.fromRGB(80, 120, 80) or Color3.fromRGB(60, 60, 80)
+                end
+            end
+        end
+    end)
+end
+
+-- ========== NO-CLIP BUTTON ==========
 local NoClipButton = Instance.new("TextButton")
 NoClipButton.Name = "NoClipButton"
-NoClipButton.Size = UDim2.new(0.8, 0, 0, 30)
-NoClipButton.Position = UDim2.new(0.1, 0, 0.1, 0)
+NoClipButton.Size = UDim2.new(1, -20, 0, 40)
+NoClipButton.Position = UDim2.new(0, 10, 0.75, 0)
 NoClipButton.Text = "NoClip: OFF"
 NoClipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 NoClipButton.Font = Enum.Font.Gotham
 NoClipButton.TextSize = 14
 NoClipButton.BackgroundColor3 = Color3.fromRGB(80, 60, 80)
-NoClipButton.Parent = ContentFrame
+NoClipButton.Parent = MainFrame
 
-local UICorner2 = Instance.new("UICorner")
-UICorner2.CornerRadius = UDim.new(0, 6)
-UICorner2.Parent = NoClipButton
+local NoClipCorner = Instance.new("UICorner")
+NoClipCorner.CornerRadius = UDim.new(0, 6)
+NoClipCorner.Parent = NoClipButton
 
 NoClipButton.MouseButton1Click:Connect(function()
     NoClip:Toggle()
@@ -158,16 +248,37 @@ NoClipButton.MouseButton1Click:Connect(function()
     NoClipButton.BackgroundColor3 = NoClip.Enabled and Color3.fromRGB(80, 120, 80) or Color3.fromRGB(80, 60, 80)
 end)
 
--- ========== AUTO POSITION FIX ==========
--- Đảm bảo menu luôn nằm trong màn hình khi load
-task.spawn(function()
-    local viewportSize = workspace.CurrentCamera.ViewportSize
-    local frameSize = MainFrame.AbsoluteSize
-    
-    MainFrame.Position = UDim2.new(
-        math.clamp(MainFrame.Position.X.Scale, 0, 1),
-        math.clamp(MainFrame.Position.X.Offset, -frameSize.X/2, viewportSize.X - frameSize.X/2),
-        math.clamp(MainFrame.Position.Y.Scale, 0, 1),
-        math.clamp(MainFrame.Position.Y.Offset, -frameSize.Y/2, viewportSize.Y - frameSize.Y/2)
-    )
+-- ========== STATUS LABEL ==========
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Size = UDim2.new(1, -20, 0, 20)
+StatusLabel.Position = UDim2.new(0, 10, 0.85, 0)
+StatusLabel.Text = "Status: Inactive"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 14
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.Parent = MainFrame
+
+-- Cập nhật trạng thái
+RunService.Heartbeat:Connect(function()
+    StatusLabel.Text = "Status: " .. (AutoKill.Active and "Hunting "..AutoKill.CurrentTarget or "Inactive")
 end)
+
+-- Nút đóng
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Hàm hỗ trợ table.find nếu chưa có
+if not table.find then
+    function table.find(t, value)
+        for i, v in ipairs(t) do
+            if v == value then
+                return i
+            end
+        end
+        return nil
+    end
+end
