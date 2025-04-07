@@ -1,15 +1,10 @@
--- Bee Swarm Simulator Auto-Jelly Bean Farming GUI
--- Created by [Your Name]
-
 local player = game.Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 
--- Main GUI
 local JellyBeanGUI = Instance.new("ScreenGui")
 JellyBeanGUI.Name = "JellyBeanFarmerGUI"
 JellyBeanGUI.Parent = CoreGui
 
--- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = JellyBeanGUI
@@ -20,7 +15,6 @@ MainFrame.Size = UDim2.new(0, 300, 0, 200)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
--- Title
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Parent = MainFrame
@@ -31,7 +25,6 @@ Title.Text = "Jelly Bean Farmer"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 
--- Field Selection
 local FieldSelection = Instance.new("ScrollingFrame")
 FieldSelection.Name = "FieldSelection"
 FieldSelection.Parent = MainFrame
@@ -41,7 +34,6 @@ FieldSelection.Size = UDim2.new(0.5, -15, 0, 150)
 FieldSelection.CanvasSize = UDim2.new(0, 0, 0, 300)
 FieldSelection.ScrollBarThickness = 5
 
--- Available Fields
 local fields = {
     "Sunflower Field",
     "Mushroom Field",
@@ -62,7 +54,6 @@ local fields = {
     "Pepper Patch"
 }
 
--- Create field buttons
 for i, fieldName in ipairs(fields) do
     local FieldButton = Instance.new("TextButton")
     FieldButton.Name = fieldName
@@ -77,7 +68,6 @@ for i, fieldName in ipairs(fields) do
     FieldButton.TextSize = 12
 end
 
--- Status Panel
 local StatusPanel = Instance.new("Frame")
 StatusPanel.Name = "StatusPanel"
 StatusPanel.Parent = MainFrame
@@ -85,7 +75,6 @@ StatusPanel.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 StatusPanel.Position = UDim2.new(0.5, 5, 0, 40)
 StatusPanel.Size = UDim2.new(0.5, -15, 0, 150)
 
--- Selected Field Display
 local SelectedField = Instance.new("TextLabel")
 SelectedField.Name = "SelectedField"
 SelectedField.Parent = StatusPanel
@@ -97,7 +86,6 @@ SelectedField.Text = "No field selected"
 SelectedField.TextColor3 = Color3.fromRGB(255, 255, 255)
 SelectedField.TextSize = 12
 
--- Start/Stop Button
 local StartButton = Instance.new("TextButton")
 StartButton.Name = "StartButton"
 StartButton.Parent = StatusPanel
@@ -109,7 +97,6 @@ StartButton.Text = "START"
 StartButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 StartButton.TextSize = 14
 
--- Status Label
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Parent = StatusPanel
@@ -121,7 +108,6 @@ StatusLabel.Text = "Status: Idle"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 StatusLabel.TextSize = 12
 
--- Close Button
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
 CloseButton.Parent = MainFrame
@@ -133,12 +119,10 @@ CloseButton.Text = "X"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseButton.TextSize = 14
 
--- Variables
 local selectedField = nil
 local isRunning = false
 local noclip = false
 
--- Field Selection Logic
 for _, button in ipairs(FieldSelection:GetChildren()) do
     if button:IsA("TextButton") then
         button.MouseButton1Click:Connect(function()
@@ -150,7 +134,6 @@ for _, button in ipairs(FieldSelection:GetChildren()) do
     end
 end
 
--- Start/Stop Functionality
 StartButton.MouseButton1Click:Connect(function()
     if not selectedField then
         StatusLabel.Text = "Status: Select a field first!"
@@ -166,24 +149,19 @@ StartButton.MouseButton1Click:Connect(function()
         StatusLabel.Text = "Status: Running"
         StatusLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
         
-        -- Enable noclip
         noclip = true
         
-        -- Teleport to selected field
         local fieldCFrame = workspace.FlowerZones[selectedField].CFrame
         player.Character.HumanoidRootPart.CFrame = fieldCFrame + Vector3.new(0, 5, 0)
         
-        -- Start auto-bean dropping
         spawn(function()
             while isRunning do
-                -- Drop jelly bean
                 local A = {
                     ["Name"] = "Jelly Beans"
                 }
                 local Event = game:GetService("ReplicatedStorage").Events.PlayerActivesCommand
                 Event:FireServer(A)
                 
-                -- Wait before dropping next bean
                 wait(0.5)
             end
         end)
@@ -193,24 +171,20 @@ StartButton.MouseButton1Click:Connect(function()
         StatusLabel.Text = "Status: Stopped"
         StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         
-        -- Disable noclip
         noclip = false
     end
 end)
 
--- Close Button
 CloseButton.MouseButton1Click:Connect(function()
     JellyBeanGUI:Destroy()
 end)
 
--- Noclip functionality
 game:GetService('RunService').Stepped:connect(function()
     if noclip and player.Character then
         player.Character.Humanoid:ChangeState(11)
     end
 end)
 
--- Anti-AFK
 local vu = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:connect(function()
     vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
